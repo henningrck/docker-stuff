@@ -1,0 +1,42 @@
+version: "3"
+
+networks:
+  proxy:
+    external: true
+
+services:
+  gitea:
+    image: gitea/gitea:latest
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      - VIRTUAL_HOST=${HOST}
+      - VIRTUAL_PORT=3000
+      - LETSENCRYPT_HOST=${HOST}
+      - USER_UID=1000
+      - USER_GID=1000
+      - GITEA__database__DB_TYPE=postgres
+      - GITEA__database__HOST=db:5432
+      - GITEA__database__NAME=gitea
+      - GITEA__database__USER=gitea
+      - GITEA__database__PASSWD=gitea
+    volumes:
+      - ./data/gitea:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - 222:22
+    networks:
+      - default
+      - proxy
+
+  db:
+    image: postgres:14
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=gitea
+      - POSTGRES_PASSWORD=gitea
+      - POSTGRES_DB=gitea
+    volumes:
+      - ./data/db:/var/lib/postgresql/data

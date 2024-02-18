@@ -1,0 +1,36 @@
+version: "3"
+
+networks:
+  proxy:
+    name: proxy
+
+services:
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy:1.4
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./data/conf:/etc/nginx/conf.d
+      - ./data/vhost:/etc/nginx/vhost.d
+      - ./data/html:/usr/share/nginx/html
+      - ./data/certs:/etc/nginx/certs:ro
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./proxy.conf:/etc/nginx/conf.d/proxy.conf:ro
+    networks:
+      - proxy
+
+  acme-companion:
+    image: nginxproxy/acme-companion:2.2
+    restart: unless-stopped
+    environment:
+      - DEFAULT_EMAIL=${DEFAULT_EMAIL}
+    volumes_from:
+      - nginx-proxy
+    volumes:
+      - ./data/certs:/etc/nginx/certs:rw
+      - ./data/acme:/etc/acme.sh
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - proxy
